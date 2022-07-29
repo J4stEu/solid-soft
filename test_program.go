@@ -13,7 +13,7 @@ func main() {
 	// Request users posts
 	posts, err := getPosts([]int{42, 43, 44, 45})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error:", err)
 	}
 	fmt.Println(posts)
 }
@@ -22,7 +22,11 @@ func main() {
 func getPosts(requestPull []int) ([]Post, error) {
 	posts := make([]Post, len(requestPull))
 	var wg sync.WaitGroup
-
+	c := make(chan error)
+	go func() {
+		wg.Wait()
+		close(c)
+	}()
 	for k, v := range requestPull {
 		wg.Add(1)
 		go func(key, value int) {
@@ -31,9 +35,9 @@ func getPosts(requestPull []int) ([]Post, error) {
 			// fmt.Println(request)
 			postResp, err := postRequest("GET", request)
 			if err != nil {
+				c <- err
 				return
 			}
-			fmt.Println(postResp)
 			posts[key] = Post{
 				UserId: postResp.UserId,
 				Id:     postResp.Id,
@@ -42,7 +46,12 @@ func getPosts(requestPull []int) ([]Post, error) {
 			}
 		}(k, v)
 	}
-	wg.Wait()
+
+	for err := range c {
+		if err != nil {
+			return []Post{}, err
+		}
+	}
 
 	return posts, nil
 }
@@ -76,7 +85,6 @@ func postRequest(method, request string) (*Post, error) {
 	if err = json.Unmarshal(bodyBytes, &respStruct); err != nil {
 		return nil, err
 	}
-	fmt.Println(respStruct)
 
 	return respStruct, nil
 }
