@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// Request users posts
-	posts, err := getPosts([]int{42, 43, 44, 45})
+	posts, err := getPosts([]int{42, 43, 44, 45, 1000})
 	if err != nil {
 		log.Fatal("Error:", err)
 	}
@@ -23,12 +23,13 @@ func getPosts(requestPull []int) ([]Post, error) {
 	posts := make([]Post, len(requestPull))
 	var wg sync.WaitGroup
 	c := make(chan error)
+	wg.Add(len(requestPull))
 	go func() {
 		wg.Wait()
 		close(c)
 	}()
 	for k, v := range requestPull {
-		wg.Add(1)
+		//wg.Add(1)
 		go func(key, value int) {
 			defer wg.Done()
 			request := fmt.Sprintf("https://winry.khashaev.ru/posts/%v", value)
